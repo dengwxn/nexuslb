@@ -21,6 +21,7 @@
 #include "nexus/common/model_def.h"
 #include "nexus/common/server_base.h"
 #include "nexus/common/spinlock.h"
+#include "nexus/common/typedef.h"
 #include "nexus/proto/control.grpc.pb.h"
 
 #ifdef USE_GPU
@@ -160,6 +161,10 @@ class BackendServer : public ServerBase, public MessageHandler {
   /*! \brief Random number genertor */
   std::random_device rd_;
   std::mt19937 rand_gen_;
+
+  // Tasks pending FetchImageReply
+  std::mutex mu_tasks_pending_fetch_image_;
+  std::unordered_map<GlobalId, std::shared_ptr<Task>> tasks_pending_fetch_image_;
 };
 
 }  // namespace backend
