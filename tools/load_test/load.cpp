@@ -81,8 +81,8 @@ class LoadTest {
 #endif
   }
 
-  void Test(int min_batch, int max_batch, const std::string output = "",
-            int repeat = 10) {
+  void TestTime(int min_batch, int max_batch, const std::string output = "",
+                int repeat = 10) {
     std::ostream* fout;
     if (output.length() == 0) {
       fout = &std::cout;
@@ -99,19 +99,44 @@ class LoadTest {
     size_t batch_size = 16;
     config.set_batch(batch_size);
     config.set_max_batch(batch_size);
-    for (int i = 0; i < 2; i++) {
-      std::unique_ptr<ModelInstanceSimple> model;
-      CreateModelInstanceSimple(gpu_, config, ModelIndex(0), &model);
 
-      for (int j = 0; j < 2; j++) {
-        auto beg = std::chrono::high_resolution_clock::now();
-        model->ForwardSimple(batch_size);
-        auto end = std::chrono::high_resolution_clock::now();
-        auto forward = std::chrono::duration_cast<duration>(end - beg).count();
-        LOG(INFO) << "Forwarding time: " << forward << "ms";
-        auto bytes = model->GetBytesInUse();
-        LOG(INFO) << "Bytes in use: " << bytes;
-      }
+    std::unique_ptr<ModelInstanceSimple> models[300];
+    for (int i = 0; i < 10; i++) {
+      auto beg = std::chrono::high_resolution_clock::now();
+      CreateModelInstanceSimple(gpu_, config, ModelIndex(0), &models[i]);
+      auto end = std::chrono::high_resolution_clock::now();
+      auto forward = std::chrono::duration_cast<duration>(end - beg).count();
+      std::cout << i + 1 << "," << forward << "\n";
+    }
+  }
+
+  void TestLimit(int min_batch, int max_batch, const std::string output = "",
+                 int repeat = 10) {
+    std::ostream* fout;
+    if (output.length() == 0) {
+      fout = &std::cout;
+    } else {
+      fout = new std::ofstream(output, std::ofstream::out);
+    }
+#ifdef USE_GPU
+    *fout << gpu_device_->device_name() << "\n";
+    *fout << gpu_device_->uuid() << "\n";
+#endif
+
+    ModelInstanceConfig config;
+    config.add_model_session()->CopyFrom(model_sess_);
+    size_t batch_size = 16;
+    config.set_batch(batch_size);
+    config.set_max_batch(batch_size);
+
+    std::unique_ptr<ModelInstanceSimple> models[300];
+    for (int i = 0; i < 210; i++) {
+      CreateModelInstanceSimple(gpu_, config, ModelIndex(0), &models[i]);
+      models[i]->ForwardSimple(batch_size);
+      auto bytes = models[i]->GetBytesInUse();
+      auto peak_bytes = models[i]->GetPeakBytesInUse();
+      std::cout << i + 1 << "," << bytes << "," << peak_bytes << "\n";
+      std::cout << std::flush;
     }
   }
 
@@ -169,5 +194,6 @@ int main(int argc, char** argv) {
 
   LoadTest load(FLAGS_gpu, FLAGS_framework, FLAGS_model, FLAGS_model_version,
                 FLAGS_height, FLAGS_width);
-  load.Test(FLAGS_min_batch, FLAGS_max_batch, FLAGS_output);
+  load.TestTime(FLAGS_min_batch, FLAGS_max_batch, FLAGS_output);
+  // load.TestLimit(FLAGS_min_batch, FLAGS_max_batch, FLAGS_output);
 }
