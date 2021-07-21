@@ -96,18 +96,22 @@ class LoadTest {
 
     ModelInstanceConfig config;
     config.add_model_session()->CopyFrom(model_sess_);
-    size_t batch_size = 1;
+    size_t batch_size = 16;
     config.set_batch(batch_size);
     config.set_max_batch(batch_size);
-    std::unique_ptr<ModelInstanceSimple> model;
-    CreateModelInstanceSimple(gpu_, config, ModelIndex(0), &model);
-
     for (int i = 0; i < 2; i++) {
-      auto beg = std::chrono::high_resolution_clock::now();
-      model->ForwardSimple(batch_size);
-      auto end = std::chrono::high_resolution_clock::now();
-      auto forward = std::chrono::duration_cast<duration>(end - beg).count();
-      LOG(INFO) << "Forwarding time: " << forward << "ms";
+      std::unique_ptr<ModelInstanceSimple> model;
+      CreateModelInstanceSimple(gpu_, config, ModelIndex(0), &model);
+
+      for (int j = 0; j < 2; j++) {
+        auto beg = std::chrono::high_resolution_clock::now();
+        model->ForwardSimple(batch_size);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto forward = std::chrono::duration_cast<duration>(end - beg).count();
+        LOG(INFO) << "Forwarding time: " << forward << "ms";
+        auto bytes = model->GetBytesInUse();
+        LOG(INFO) << "Bytes in use: " << bytes;
+      }
     }
   }
 
