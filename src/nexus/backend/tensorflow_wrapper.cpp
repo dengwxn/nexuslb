@@ -117,8 +117,8 @@ Session::Session(const std::string& visible_device_list,
   } else {
     // Need to set allow_growth, otherwise TensorFlow can't initialize:
     //   failed to create cublas handle: CUBLAS_STATUS_NOT_INITIALIZED
-    LOG(INFO) << "set_allow_growth(true)";
-    gpu_opt->set_allow_growth(true);
+    // LOG(INFO) << "set_allow_growth(true)";
+    // gpu_opt->set_allow_growth(true);
   }
 #else
   auto& tf_option = impl_->cpu_option;

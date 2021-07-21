@@ -59,7 +59,7 @@ ModelExecutor::ModelExecutor(int gpu_id, const ModelInstanceConfig& config,
   // Create multiple input arrays. When one is used by forwarding, memcpy can
   // still happen to another.
   LOG(INFO) << "Warming up input array for " << model_->model_session_id();
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < 2; ++i) {
     auto input_array = model_->CreateInputGpuArray();
     // model_->WarmupInputArray(input_array);  // Not effective
     input_arrays_.insert(input_array);

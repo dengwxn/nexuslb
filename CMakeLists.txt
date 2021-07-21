@@ -347,8 +347,8 @@ target_link_libraries(test_preprocessing_scalability PUBLIC common)
 
 
 ###### tools/send_workload ######
-add_executable(send_workload tools/send_workload.cpp)
-target_link_libraries(send_workload PUBLIC common)
+# add_executable(send_workload tools/send_workload.cpp)
+# target_link_libraries(send_workload PUBLIC common)
 
 
 
