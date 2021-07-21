@@ -1,7 +1,7 @@
-#ifndef NEXUS_BACKEND_TENSORFLOW_MODEL_H_
-#define NEXUS_BACKEND_TENSORFLOW_MODEL_H_
+#ifndef NEXUS_BACKEND_TENSORFLOW_MODEL_SIMPLE_H_
+#define NEXUS_BACKEND_TENSORFLOW_MODEL_SIMPLE_H_
 
-#include "nexus/backend/model_ins.h"
+#include "nexus/backend/model_ins_simple.h"
 #include "nexus/backend/tensorflow_wrapper.h"
 
 namespace nexus {
@@ -9,12 +9,12 @@ namespace backend {
 
 class TFShareModel;
 
-class TensorflowModel : public ModelInstance {
+class TensorflowModelSimple : public ModelInstanceSimple {
  public:
-  TensorflowModel(int gpu_id, const ModelInstanceConfig& config,
-                  ModelIndex model_index);
+  TensorflowModelSimple(int gpu_id, const ModelInstanceConfig& config,
+                        ModelIndex model_index);
 
-  ~TensorflowModel();
+  ~TensorflowModelSimple();
 
   void WarmupInputArray(std::shared_ptr<Array> input_array) override;
 
@@ -27,6 +27,8 @@ class TensorflowModel : public ModelInstance {
   std::unordered_map<std::string, ArrayPtr> GetOutputGpuArrays() final;
 
   void Preprocess(std::shared_ptr<Task> task) final;
+
+  void ForwardSimple(size_t batch_size) final;
 
   void Forward(std::shared_ptr<BatchTask> batch_task) final;
 
@@ -66,4 +68,4 @@ class TensorflowModel : public ModelInstance {
 }  // namespace backend
 }  // namespace nexus
 
-#endif  // NEXUS_BACKEND_TENSORFLOW_MODEL_H_
+#endif  // NEXUS_BACKEND_TENSORFLOW_MODEL_SIMPLE_H_

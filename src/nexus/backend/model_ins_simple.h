@@ -1,5 +1,5 @@
-#ifndef NEXUS_BACKEND_MODEL_INS_H_
-#define NEXUS_BACKEND_MODEL_INS_H_
+#ifndef NEXUS_BACKEND_MODEL_INS_SIMPLE_H_
+#define NEXUS_BACKEND_MODEL_INS_SIMPLE_H_
 
 #include <atomic>
 #include <memory>
@@ -16,22 +16,22 @@ namespace nexus {
 namespace backend {
 
 /*!
- * \brief ModelInstance is an abstraction for a model instance developed in
- * different frameworks. It includes a set of APIs that is required for
- * pre- and post-process on inputs and outputs of the model, and forwarding the
- * model in a batch.
+ * \brief ModelInstanceSimple is an abstraction for a model instance developed
+ * in different frameworks. It includes a set of APIs that is required for pre-
+ * and post-process on inputs and outputs of the model, and forwarding the model
+ * in a batch.
  */
-class ModelInstance {
+class ModelInstanceSimple {
  public:
   /*!
-   * \brief Construct a ModelInstance in given gpu and config.
+   * \brief Construct a ModelInstanceSimple in given gpu and config.
    * \param gpu_id GPU index
    * \param config Configuration of model instance
    */
-  ModelInstance(int gpu_id, const ModelInstanceConfig& config,
-                ModelIndex model_index);
-  /*! \brief Deconstructs ModelInstance. */
-  virtual ~ModelInstance();
+  ModelInstanceSimple(int gpu_id, const ModelInstanceConfig& config,
+                      ModelIndex model_index);
+  /*! \brief Deconstructs ModelInstanceSimple. */
+  virtual ~ModelInstanceSimple();
   /*! \brief Get GPU ID that model is allocated on. */
   int gpu_id() const { return gpu_id_; }
   /*! \brief Get the framework name. */
@@ -109,6 +109,9 @@ class ModelInstance {
    * \param task Pointer to task.
    */
   virtual void Preprocess(std::shared_ptr<Task> task) = 0;
+
+  virtual void ForwardSimple(size_t batch_size) = 0;
+
   /*!
    * \brief Forward batched task through the model on GPU.
    * \param task Pointer to batch task.
@@ -156,11 +159,11 @@ class ModelInstance {
  * \param config Model instance configuration
  * \param model Unique pointer to store the model instance
  */
-void CreateModelInstance(int gpu_id, const ModelInstanceConfig& config,
-                         ModelIndex model_index,
-                         std::unique_ptr<ModelInstance>* model);
+void CreateModelInstanceSimple(int gpu_id, const ModelInstanceConfig& config,
+                               ModelIndex model_index,
+                               std::unique_ptr<ModelInstanceSimple>* model);
 
 }  // namespace backend
 }  // namespace nexus
 
-#endif  // NEXUS_BACKEND_MODEL_INS_H_
+#endif  // NEXUS_BACKEND_MODEL_INS_SIMPLE_H_

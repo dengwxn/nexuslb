@@ -1,4 +1,4 @@
-#include "nexus/backend/tensorflow_model.h"
+#include "nexus/backend/tensorflow_model_simple.h"
 
 #include <glog/logging.h>
 
@@ -30,9 +30,11 @@ void FillJunk(T* data, size_t len) {
 namespace nexus {
 namespace backend {
 
-TensorflowModel::TensorflowModel(int gpu_id, const ModelInstanceConfig& config,
-                                 ModelIndex model_index)
-    : ModelInstance(gpu_id, config, model_index), first_input_array_(true) {
+TensorflowModelSimple::TensorflowModelSimple(int gpu_id,
+                                             const ModelInstanceConfig& config,
+                                             ModelIndex model_index)
+    : ModelInstanceSimple(gpu_id, config, model_index),
+      first_input_array_(true) {
   CHECK(model_info_["model_file"]) << "Missing model_file in the model info";
 
   double per_process_gpu_memory_fraction;
@@ -135,7 +137,8 @@ TensorflowModel::TensorflowModel(int gpu_id, const ModelInstanceConfig& config,
   }
 }
 
-void TensorflowModel::WarmupInputArray(std::shared_ptr<Array> input_array) {
+void TensorflowModelSimple::WarmupInputArray(
+    std::shared_ptr<Array> input_array) {
   const auto& in_tensor = input_tensors_[input_array->tag()];
 
   std::vector<char> buf;
@@ -160,22 +163,22 @@ void TensorflowModel::WarmupInputArray(std::shared_ptr<Array> input_array) {
   (void)WarmupInputTensor(in_tensor);
 }
 
-std::vector<tf::Tensor> TensorflowModel::WarmupInputTensor(
+std::vector<tf::Tensor> TensorflowModelSimple::WarmupInputTensor(
     tf::Tensor in_tensor) {
   std::vector<std::pair<std::string, tf::Tensor>> inputs;
   inputs.emplace_back(input_layer_, in_tensor);
   return session_->Run(inputs, output_layers_);
 }
 
-TensorflowModel::~TensorflowModel() {}
+TensorflowModelSimple::~TensorflowModelSimple() {}
 
-Shape TensorflowModel::InputShape() { return input_shape_; }
+Shape TensorflowModelSimple::InputShape() { return input_shape_; }
 
-std::unordered_map<std::string, Shape> TensorflowModel::OutputShapes() {
+std::unordered_map<std::string, Shape> TensorflowModelSimple::OutputShapes() {
   return output_shapes_;
 }
 
-ArrayPtr TensorflowModel::CreateInputGpuArray() {
+ArrayPtr TensorflowModelSimple::CreateInputGpuArray() {
   tf::Tensor tensor;
   if (first_input_array_) {
     tensor = input_tensors_[0];
@@ -198,13 +201,13 @@ ArrayPtr TensorflowModel::CreateInputGpuArray() {
 }
 
 std::unordered_map<std::string, ArrayPtr>
-TensorflowModel::GetOutputGpuArrays() {
+TensorflowModelSimple::GetOutputGpuArrays() {
   // Because TF always returns output in CPU memory, doesn't support in-place
   // output in GPU memory
   return {};
 }
 
-void TensorflowModel::Preprocess(std::shared_ptr<Task> task) {
+void TensorflowModelSimple::Preprocess(std::shared_ptr<Task> task) {
   // Tensorflow uses NHWC by default. More details see
   // https://www.tensorflow.org/versions/master/performance/performance_guide
 
@@ -263,7 +266,12 @@ void TensorflowModel::Preprocess(std::shared_ptr<Task> task) {
   }
 }
 
-void TensorflowModel::Forward(std::shared_ptr<BatchTask> batch_task) {
+void TensorflowModelSimple::ForwardSimple(size_t batch_size) {
+  auto in_tensor = input_tensors_[0].Slice(0, batch_size);
+  auto out_tensors = session_->Run({{input_layer_, in_tensor}}, output_layers_);
+}
+
+void TensorflowModelSimple::Forward(std::shared_ptr<BatchTask> batch_task) {
   size_t batch_size = batch_task->batch_size();
   auto in_tensor =
       input_tensors_[batch_task->GetInputArray()->tag()].Slice(0, batch_size);
@@ -282,7 +290,7 @@ void TensorflowModel::Forward(std::shared_ptr<BatchTask> batch_task) {
   batch_task->SliceOutputBatch(slices);
 }
 
-void TensorflowModel::Postprocess(std::shared_ptr<Task> task) {
+void TensorflowModelSimple::Postprocess(std::shared_ptr<Task> task) {
   const QueryProto& query = task->query;
   QueryResultProto* result = &task->result;
   result->set_status(CTRL_OK);
@@ -312,13 +320,15 @@ void TensorflowModel::Postprocess(std::shared_ptr<Task> task) {
   }
 }
 
-uint64_t TensorflowModel::GetPeakBytesInUse() {
+uint64_t TensorflowModelSimple::GetPeakBytesInUse() {
   return session_->GetPeakBytesInUse();
 }
 
-uint64_t TensorflowModel::GetBytesInUse() { return session_->GetBytesInUse(); }
+uint64_t TensorflowModelSimple::GetBytesInUse() {
+  return session_->GetBytesInUse();
+}
 
-tf::Tensor TensorflowModel::NewInputTensor() {
+tf::Tensor TensorflowModelSimple::NewInputTensor() {
   std::vector<size_t> shape;
   for (auto dim : input_shape_.dims()) {
     shape.push_back(dim);
@@ -338,10 +348,9 @@ tf::Tensor TensorflowModel::NewInputTensor() {
   return input_tensors_.back();
 }
 
-void TensorflowModel::MarshalDetectionResult(const QueryProto& query,
-                                             std::shared_ptr<Output> output,
-                                             int im_height, int im_width,
-                                             QueryResultProto* result) {
+void TensorflowModelSimple::MarshalDetectionResult(
+    const QueryProto& query, std::shared_ptr<Output> output, int im_height,
+    int im_width, QueryResultProto* result) {
   int num_boxes =
       static_cast<int>(output->arrays.at("num_detections")->Data<float>()[0]);
   float* boxes = output->arrays.at("detection_boxes")->Data<float>();

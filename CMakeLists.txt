@@ -176,6 +176,7 @@ add_library(backend_obj
         src/nexus/backend/gpu_executor.cpp
         src/nexus/backend/model_exec.cpp
         src/nexus/backend/model_ins.cpp
+        src/nexus/backend/model_ins_simple.cpp
         src/nexus/backend/sleep_model.cpp
         src/nexus/backend/slice.cpp
         src/nexus/backend/task.cpp
@@ -203,7 +204,8 @@ if(USE_TENSORFLOW)
 
     target_compile_definitions(backend_obj PUBLIC USE_TENSORFLOW)
     target_sources(backend_obj PRIVATE
-            src/nexus/backend/tensorflow_model.cpp)
+            src/nexus/backend/tensorflow_model.cpp
+            src/nexus/backend/tensorflow_model_simple.cpp)
     target_link_libraries(backend_obj PUBLIC tensorflow_wrapper)
 endif()
 
