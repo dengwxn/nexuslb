@@ -293,6 +293,12 @@ target_link_libraries(profiler PRIVATE common backend_obj)
 
 
 
+###### tools/load ######
+add_executable(load_test tools/load_test/load.cpp)
+target_link_libraries(load_test PRIVATE common backend_obj)
+
+
+
 ###### tools/test_pb ######
 # if(USE_GPU)
 #     add_executable(test_pb tools/profiler/test_pb.cpp)
