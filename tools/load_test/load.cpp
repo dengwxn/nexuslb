@@ -96,7 +96,7 @@ class LoadTest {
 
     ModelInstanceConfig config;
     config.add_model_session()->CopyFrom(model_sess_);
-    size_t batch_size = 16;
+    size_t batch_size = 64;
     config.set_batch(batch_size);
     config.set_max_batch(batch_size);
 
@@ -125,13 +125,16 @@ class LoadTest {
 
     ModelInstanceConfig config;
     config.add_model_session()->CopyFrom(model_sess_);
-    size_t batch_size = 16;
+    size_t batch_size = 64;
     config.set_batch(batch_size);
     config.set_max_batch(batch_size);
 
-    std::unique_ptr<ModelInstanceSimple> models[300];
-    for (int i = 0; i < 210; i++) {
+    std::unique_ptr<ModelInstanceSimple> models[10086];
+    for (int i = 0;; i++) {
       CreateModelInstanceSimple(gpu_, config, ModelIndex(0), &models[i]);
+      for (int j = 0; j < 2; ++j) {
+        auto input_array = models[i]->CreateInputGpuArray();
+      }
       models[i]->ForwardSimple(batch_size);
       auto bytes = models[i]->GetBytesInUse();
       auto peak_bytes = models[i]->GetPeakBytesInUse();
@@ -194,6 +197,6 @@ int main(int argc, char** argv) {
 
   LoadTest load(FLAGS_gpu, FLAGS_framework, FLAGS_model, FLAGS_model_version,
                 FLAGS_height, FLAGS_width);
-  load.TestTime(FLAGS_min_batch, FLAGS_max_batch, FLAGS_output);
-  // load.TestLimit(FLAGS_min_batch, FLAGS_max_batch, FLAGS_output);
+  // load.TestTime(FLAGS_min_batch, FLAGS_max_batch, FLAGS_output);
+  load.TestLimit(FLAGS_min_batch, FLAGS_max_batch, FLAGS_output);
 }
